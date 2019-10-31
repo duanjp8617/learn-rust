@@ -52,6 +52,12 @@ impl<T> List<T> {
             })
         }
     }
+
+    pub fn head(&self) -> Option<&T> {
+        self.head.as_ref().map(|rc_node| {
+            & rc_node.elem
+        })
+    }
 }
 
 pub struct Iter<'a, T> {
@@ -81,5 +87,42 @@ impl<T> Drop for List<T> {
                 break;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::List;
+
+    #[test]
+    fn basics() {
+        let list = List::new();
+        assert_eq!(list.head(), None);
+
+        let list = list.append(1).append(2).append(3);
+        assert_eq!(list.head(), Some(&3));
+
+        let list = list.tail();
+        assert_eq!(list.head(), Some(&2));
+
+        let list = list.tail();
+        assert_eq!(list.head(), Some(&1));
+
+        let list = list.tail();
+        assert_eq!(list.head(), None);
+
+        // Make sure empty tail works
+        let list = list.tail();
+        assert_eq!(list.head(), None);
+    }
+
+    #[test]
+    fn iter() {
+        let list = List::new().append(1).append(2).append(3);
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&1));
     }
 }
