@@ -107,7 +107,7 @@ impl<T> List<T> {
             Rc::try_unwrap(last_node).ok().unwrap().into_inner().elem
         })
     }
-
+    
     fn peek_back(&self) -> Option<Ref<T>> {
         self.tail.as_ref().map(|last_node|{
             Ref::map(last_node.borrow(), |node|{
@@ -128,6 +128,26 @@ impl<T> List<T> {
         IntoIter(self)
     }
 }
+
+/* struct Iter<'a, T> (Option<Ref<'a, Node<T>>>);
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = Ref<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.take().map(|inner|{
+            let (elem_ref, next) = Ref::map_split(inner, |node| {                        
+                (&node.elem, &node.next)
+            });
+
+            self.0 = next.as_ref().map(|inner|{
+                inner.borrow()
+            });  
+
+            elem_ref
+        })
+    }
+} */
 
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
