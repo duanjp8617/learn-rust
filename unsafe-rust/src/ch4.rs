@@ -50,6 +50,25 @@ fn what_the_fuck_is_this() {
     println!("{}", x);
 }
 
+// Drop flag: rust stores drop flag for each variable on the stack to track whether the 
+// variable has been initialized.
+// If the variable is not initialized, it will not be dropped.
+// If the value is moved out from a variable, the variable becomes uninitialized,
+// it will not be dropped.
+
+fn drop_behavior() {
+    let mut x = Box::new(0); // x was initialized
+    let y = x; // x was moved out, become uninitialized, y is moved in,
+               // become initialized
+    // y will be dropped.
+    // x will not be dropped
+}
+
+fn invalid_array_definition() {
+    let x : [i32; 4];
+    x = [i32; 4];
+}
+
 pub fn ch4_run() {
     println!("ch4 run!");
     initialized_var();
