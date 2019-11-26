@@ -81,6 +81,26 @@ fn array_definition() {
     let a2 : [i32; 4] = [1,2,3,4];
 }
 
+const SIZE : usize = 10;
+
+fn mayuninit_test() {
+    let mut x : [MaybeUninit<Box<i32>>; SIZE] = unsafe {
+        MaybeUninit::uninit().assume_init()
+    };
+
+    for i in 0..SIZE {
+
+        // x[i] = MaybeUninit::new(Box::new(i as i32));
+        
+        // This is erroneous because it may cause the drop of uninitialized variable
+        // unsafe{*x[i].as_mut_ptr() = Box::new(i as i32);}
+    }
+
+    unsafe {mem::transmute::<_, [Box<i32>; SIZE]>(x)};
+}
+
+
+
 pub fn ch4_run() {
     println!("ch4 run!");
     initialized_var();
