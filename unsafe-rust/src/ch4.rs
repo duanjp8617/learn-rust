@@ -4,6 +4,8 @@
 //     println!("{}", x)
 // }
 
+use std::mem::{self, MaybeUninit};
+
 // this however, works, because rust knows that on 
 // every brach the variable x will be initialized.
 fn initialized_var() {
@@ -64,9 +66,19 @@ fn drop_behavior() {
     // x will not be dropped
 }
 
-fn invalid_array_definition() {
-    let x : [i32; 4];
-    x = [i32; 4];
+// you can't visit the element of an uninitalized array
+// fn invalid_array_definition() {
+//     let x : [i32; 4];
+//     println!("{}", x[0]);
+// }
+
+// the initialization of the array is pretty regid in Rust
+fn array_definition() {
+    // you can either create an array with four identical elements.
+    let a1 : [i32; 4] = [1; 4];
+
+    // or you must specify every element of the array
+    let a2 : [i32; 4] = [1,2,3,4];
 }
 
 pub fn ch4_run() {
