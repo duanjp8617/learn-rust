@@ -3,4 +3,5 @@
 members = [
     "linklist",
     "unsafe-rust",
+    "learn-mio",
 ]
