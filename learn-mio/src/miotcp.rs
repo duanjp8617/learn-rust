@@ -46,3 +46,36 @@ pub fn accept() {
 
     t.join().unwrap();
 }
+
+
+    pub fn parse_args(&mut self, mut args : Args) -> bool {
+        let mut parse_succeed = true;
+        while let Some(arg) = args.next() {
+            match self.search_for_matched_pattern(&arg) {
+                Some(pat) => {
+                    if pat.visited {
+                        println!("duplicated argument {}", pat.pat);
+                        return false;
+                    }
+                    pat.visited = true;
+                    if pat.need_arg {
+                        if let Some(next_arg) = args.next() {
+                            (pat.op)(&mut self.cli_info, next_arg);
+                        }
+                        else {
+                            println!("not enough arguments");
+                            return false;
+                        }
+                    }
+                    else {
+                        (pat.op)(&mut self.cli_info, String::new());
+                    }
+                },
+                None => {
+                    println!("invalid arg name: {}", arg);
+                    return false;
+                }
+            };
+        };
+        return true;
+    }
