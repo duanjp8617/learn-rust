@@ -71,7 +71,6 @@ impl<T> DummyCliParser<T> {
 
 
     pub fn parse_args(&mut self, mut args : Args) -> bool {
-        let mut parse_succeed = true;
         while let Some(arg) = args.next() {
             match search_for_matched_pattern(&mut self.pats, &arg) {
                 Some(pat) => {
@@ -108,6 +107,15 @@ pub fn run() {
 
 
     let mut fuck = DummyCliParser::<i32>::new(5);
-    fuck.parse_args(std::env::args());
+    fuck.register_cmd_pat(String::from("-fuck"), true, CmdType::compulsory, |i: &mut i32, s : String|{
+        *i = 6
+    });
+
+    if fuck.parse_args(std::env::args()) {
+        println!("Parse succeed");
+    }
+    else {
+        println!("Parse fail");
+    }
     
 }
