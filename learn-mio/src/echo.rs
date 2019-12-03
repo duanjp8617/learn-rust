@@ -19,6 +19,16 @@ struct DummyCliParser<T> {
     pats : Vec<CmdPat<T>>,
 }
 
+fn search_for_matched_pattern<'a, T>(pats: &'a mut Vec<CmdPat<T>>, new_pat: &String) -> Option<&'a mut CmdPat<T>> {
+    let mut iter_mut = pats.iter_mut();
+    while let Some(pat) = iter_mut.next() {
+        if pat.pat == *new_pat {
+            return Some(pat);
+        };
+    };
+    None
+}
+
 impl<T> DummyCliParser<T> {
 
     pub fn new(default : T) -> DummyCliParser<T> {
@@ -28,18 +38,8 @@ impl<T> DummyCliParser<T> {
         }
     }
 
-    fn search_for_matched_pattern(&mut self, new_pat: &String) -> Option<&mut CmdPat<T>> {        
-        let mut iter_mut = self.pats.iter_mut();
-        while let Some(pat) = iter_mut.next() {
-            if pat.pat == *new_pat {
-                return Some(pat);
-            };
-        };
-        None
-    }
-
     pub fn register_cmd_pat(&mut self, pat : String, need_arg : bool, cmd_type : CmdType, op : impl Fn(&mut T, String) + 'static) {
-        if self.search_for_matched_pattern(&pat).is_none() {
+        if search_for_matched_pattern(&mut self.pats, &pat).is_none() {
             self.pats.push(CmdPat {
                 pat : pat,
                 need_arg : need_arg,
@@ -69,10 +69,11 @@ impl<T> DummyCliParser<T> {
         succeed
     }
 
+
     pub fn parse_args(&mut self, mut args : Args) -> bool {
         let mut parse_succeed = true;
         while let Some(arg) = args.next() {
-            match self.search_for_matched_pattern(&arg) {
+            match search_for_matched_pattern(&mut self.pats, &arg) {
                 Some(pat) => {
                     if pat.visited {
                         println!("duplicated argument {}", pat.pat);
@@ -97,37 +98,9 @@ impl<T> DummyCliParser<T> {
                     return false;
                 }
             };
-
-            /* let pat_iter = self.pats.iter_mut();
-            for pat in pat_iter {
-                if arg != pat.pat {
-                    continue;
-                }
-                if pat.visited {
-                    println!("duplicated argument {}", pat.pat);
-                    parse_succeed = false;
-                    break;
-                }
-                pat.visited = true;
-                if pat.need_arg {
-                    if let Some(next_arg) = args.next() {
-                        (pat.op)(&mut self.cli_info, next_arg);
-                    }
-                    else {
-                        println!("not enough arguments");
-                        parse_succeed = false;
-                        break;
-                    }
-                }
-                else {
-                    (pat.op)(&mut self.cli_info, String::new());
-                }
-            } */
         };
+        return true;
     }
-
-
-
 
 }
 
