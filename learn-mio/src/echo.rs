@@ -74,28 +74,39 @@ impl<T> DummyCliParser<T> {
     pub fn parse_args(&mut self, mut args : Args) -> Result<&T, String> {
         // the first argument is always the command name in linux
         args.next().unwrap();
+
+        let func = |pat : &mut CmdPat<T>, ci : &mut T, args : &mut Args| -> Option<String> {
+            match pat.visited {
+                true => {
+                    Some(format!("duplicated argument {}", &pat.pat))
+                },
+                false => {
+                    pat.visited = true;
+                    match pat.need_arg {
+                        true => {
+                            args.next().map_or_else(
+                                || {
+                                    Some(format!("not enough arguments"))
+                                }, 
+                                |next_arg| {
+                                    (pat.op)(ci, next_arg)
+                                }
+                            )
+                        },
+                        false => {
+                            (pat.op)(ci, String::new())
+                        }
+                    }
+                }
+            }
+        };
         while let Some(arg) = args.next() {
             match search_for_matched_pattern(&mut self.pats, &arg) {
                 Some(pat) => {
-                    if pat.visited {
-                        return Err(format!("duplicated argument {}", &pat.pat));
-                    }
-                    pat.visited = true;
-                    if pat.need_arg {
-                        if let Some(next_arg) = args.next() {
-                            if let Some(err_msg) = (pat.op)(&mut self.cli_info, next_arg) {
-                                return Err(err_msg);
-                            }
-                        }
-                        else {                            
-                            return Err(format!("not enough arguments"));
-                        }
-                    }
-                    else {
-                        if let Some(err_msg) = (pat.op)(&mut self.cli_info, String::new()) {
-                            return Err(err_msg);
-                        }
-                    }
+                    match func(pat, &mut self.cli_info, &mut args) {
+                        Some(err_msg) => return Err(err_msg),
+                        _ => {}, 
+                    };
                 },
                 None => {                    
                     return Err(format!("invalid arg name: {}", arg));
