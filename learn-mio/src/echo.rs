@@ -71,6 +71,8 @@ impl<T> DummyCliParser<T> {
 
 
     pub fn parse_args(&mut self, mut args : Args) -> bool {
+        // the first argument is always the command name in linux
+        args.next().unwrap();
         while let Some(arg) = args.next() {
             match search_for_matched_pattern(&mut self.pats, &arg) {
                 Some(pat) => {
@@ -105,10 +107,24 @@ impl<T> DummyCliParser<T> {
 
 pub fn run() {
 
-
     let mut fuck = DummyCliParser::<i32>::new(5);
     fuck.register_cmd_pat(String::from("-fuck"), true, CmdType::compulsory, |i: &mut i32, s : String|{
-        *i = 6
+        if s.len() == 0 {
+            println!("empty string");
+        }
+        else {
+            println!("{}", &s);
+        }
+        *i = 6;
+    });
+    fuck.register_cmd_pat(String::from("-you"), false, CmdType::compulsory, |i: &mut i32, s : String|{
+        if s.len() == 0 {
+            println!("empty string");
+        }
+        else {
+            println!("{}", &s);
+        }
+        *i = 6;
     });
 
     if fuck.parse_args(std::env::args()) {
