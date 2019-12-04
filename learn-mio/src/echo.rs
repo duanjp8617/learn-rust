@@ -1,5 +1,6 @@
 use std::vec::Vec;
 use std::env::Args;
+use std::result::Result;
 
 enum CmdType {
     compulsory,
@@ -70,37 +71,34 @@ impl<T> DummyCliParser<T> {
     }
 
 
-    pub fn parse_args(&mut self, mut args : Args) -> bool {
+    pub fn parse_args(&mut self, mut args : Args) -> Result<&T, String> {
         // the first argument is always the command name in linux
         args.next().unwrap();
         while let Some(arg) = args.next() {
             match search_for_matched_pattern(&mut self.pats, &arg) {
                 Some(pat) => {
                     if pat.visited {
-                        println!("duplicated argument {}", pat.pat);
-                        return false;
+                        return Err(format!("duplicated argument {}", &pat.pat));
                     }
                     pat.visited = true;
                     if pat.need_arg {
                         if let Some(next_arg) = args.next() {
                             (pat.op)(&mut self.cli_info, next_arg);
                         }
-                        else {
-                            println!("not enough arguments");
-                            return false;
+                        else {                            
+                            return Err(format!("not enough arguments"));
                         }
                     }
                     else {
                         (pat.op)(&mut self.cli_info, String::new());
                     }
                 },
-                None => {
-                    println!("invalid arg name: {}", arg);
-                    return false;
+                None => {                    
+                    return Err(format!("invalid arg name: {}", arg));
                 }
             };
         };
-        return true;
+        return Ok(&self.cli_info);
     }
 
 }
@@ -124,14 +122,15 @@ pub fn run() {
         else {
             println!("{}", &s);
         }
-        *i = 6;
+        *i = 7;
     });
 
-    if fuck.parse_args(std::env::args()) {
-        println!("Parse succeed");
-    }
-    else {
-        println!("Parse fail");
-    }
-    
+    match fuck.parse_args(std::env::args()) {
+        Ok(val) => {
+            println!("Parse succeed, with {}", val);
+        },
+        Err(s) => {
+            println!("Parse fail with {}", &s);
+        }
+    };
 }
