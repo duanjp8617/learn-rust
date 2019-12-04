@@ -11,7 +11,7 @@ struct CmdPat<T> {
     pat : String,
     need_arg : bool,
     cmd_type : CmdType,
-    op : Box<dyn Fn(&mut T, String)>,
+    op : Box<dyn Fn(&mut T, String) -> Option<String>>,
     visited : bool,
 }
 
@@ -39,7 +39,7 @@ impl<T> DummyCliParser<T> {
         }
     }
 
-    pub fn register_cmd_pat(&mut self, pat : String, need_arg : bool, cmd_type : CmdType, op : impl Fn(&mut T, String) + 'static) {
+    pub fn register_cmd_pat(&mut self, pat : String, need_arg : bool, cmd_type : CmdType, op : impl Fn(&mut T, String) -> Option<String> + 'static) {
         if search_for_matched_pattern(&mut self.pats, &pat).is_none() {
             self.pats.push(CmdPat {
                 pat : pat,
@@ -83,14 +83,18 @@ impl<T> DummyCliParser<T> {
                     pat.visited = true;
                     if pat.need_arg {
                         if let Some(next_arg) = args.next() {
-                            (pat.op)(&mut self.cli_info, next_arg);
+                            if let Some(err_msg) = (pat.op)(&mut self.cli_info, next_arg) {
+                                return Err(err_msg);
+                            }
                         }
                         else {                            
                             return Err(format!("not enough arguments"));
                         }
                     }
                     else {
-                        (pat.op)(&mut self.cli_info, String::new());
+                        if let Some(err_msg) = (pat.op)(&mut self.cli_info, String::new()) {
+                            return Err(err_msg);
+                        }
                     }
                 },
                 None => {                    
@@ -114,6 +118,7 @@ pub fn run() {
             println!("{}", &s);
         }
         *i = 6;
+        None
     });
     fuck.register_cmd_pat(String::from("-you"), false, CmdType::compulsory, |i: &mut i32, s : String|{
         if s.len() == 0 {
@@ -123,6 +128,7 @@ pub fn run() {
             println!("{}", &s);
         }
         *i = 7;
+        None
     });
 
     match fuck.parse_args(std::env::args()) {
