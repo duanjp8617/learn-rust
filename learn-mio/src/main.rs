@@ -41,12 +41,15 @@ fn main() {
         description : String::from("cao ni ma ya"),
     }).unwrap();
 
+    let parse_obj;
     match fuck.parse_env_args() {
         Ok(val) => {
-            println!("Parse succeed, with: {}", &val);
+            parse_obj = val;            
         },
         Err(s) => {
             println!("{}", &s);
+            return;
         }
     };
+    println!("Parse succeed, with: {}", &parse_obj);
 }
