@@ -2,16 +2,14 @@ mod miotcp;
 mod echo;
 mod dummy_cli_parser;
 
-use dummy_cli_parser::{DummyCliParser, Pattern, PatternType};
+use dummy_cli_parser::{DummyCliParser, PatternType};
 
 fn main() {
     let mut fuck = DummyCliParser::<i32>::new(5);
 
-    fuck.register_cmd_pat(Pattern{
-        pat_str : String::from("-fuck"), 
-        need_arg : true, 
-        pat_type : PatternType::Compulsory, 
-        parse_func : Box::new(|s : String, i: &mut i32|{
+    fuck.register_pattern(
+        "-fuck", PatternType::WithArg, "cao ni ma", 
+        |s : String, i: &mut i32|{
             if s.len() == 0 {
                 println!("empty string");
             }
@@ -20,26 +18,21 @@ fn main() {
             }
             *i = 6;
             Ok(())
-        }),
-        description : String::from("cao ni ma"),
-    }).unwrap();
+        },
+    ).unwrap();
 
-    fuck.register_cmd_pat(Pattern{
-        pat_str : String::from("-you"), 
-        need_arg : false, 
-        pat_type : PatternType::HaveDefault, 
-        parse_func : Box::new(|s : String, i: &mut i32|{
+    fuck.register_pattern("-you", PatternType::OptionalWithoutArg, "cao ni ma", 
+        |s : String, i: &mut i32|{
             if s.len() == 0 {
                 println!("empty string");
             }
             else {
                 println!("{}", &s);
             }
-            *i = 6;
+            *i = 7;
             Ok(())
-        }),
-        description : String::from("cao ni ma ya"),
-    }).unwrap();
+        },
+    ).unwrap();
 
     let parse_obj;
     match fuck.parse_env_args() {

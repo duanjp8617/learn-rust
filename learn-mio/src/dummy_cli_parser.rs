@@ -4,20 +4,30 @@ use std::result::Result;
 // pattern, arg, pattern (arg pattern), arg -> arg list
 
 pub enum PatternType {
-    Compulsory,
-    HaveDefault,
+    WithArg,
+    WithoutArg,
+    OptionalWithArg,
+    OptionalWithoutArg,
 }
 
-pub struct Pattern<T> {
-    pub pat_str : String,
-    pub need_arg : bool, 
-    pub pat_type : PatternType, 
-    pub parse_func : Box<dyn Fn(String, &mut T) -> Result<(), String>>,
-    pub description : String,
+fn need_arg(pat_type: &PatternType) -> bool {
+    match &pat_type {
+        PatternType::WithArg => true,
+        PatternType::WithoutArg => false,
+        PatternType::OptionalWithArg => true,
+        PatternType::OptionalWithoutArg => false,
+    }
+}
+
+struct PatInternal<T> {
+    pat_str : String,
+    pat_type : PatternType, 
+    parse_func : Box<dyn Fn(String, &mut T) -> Result<(), String>>,
+    description : String,
 }
 
 struct Pat<T> {
-    internal : Pattern<T>,
+    internal : PatInternal<T>,
     visited : bool,
 }
 
@@ -29,7 +39,7 @@ impl<T> Pat<T> {
             },
             false => {
                 self.visited = true;
-                match self.internal.need_arg {
+                match need_arg(&self.internal.pat_type) {
                     true => {
                         args.next().map_or_else(
                             || {
@@ -75,20 +85,28 @@ impl<T> DummyCliParser<T> {
         }
     }
     
-    pub fn register_cmd_pat(&mut self, pat : Pattern<T>) -> Result<(), String> {
-        if search_for_matched_pattern(&mut self.pats, &pat.pat_str).is_none() {
-            match &pat.pat_type {
-                PatternType::Compulsory => self.compulsory_cnt += 1,
+    pub fn register_pattern(&mut self, pat: &'static str, pat_type: PatternType, description: &'static str,
+                            parse_func : impl Fn(String, &mut T) -> Result<(), String> + 'static) -> Result<(), String> {
+        let pat_str = String::from(pat);
+        let description_str = String::from(description);
+        if search_for_matched_pattern(&mut self.pats, &pat_str).is_none() {
+            match &pat_type {
+                PatternType::WithArg | PatternType::WithoutArg => self.compulsory_cnt += 1,
                 _ => {},
             };
             self.pats.push(Pat {
-                internal : pat,
+                internal : PatInternal {
+                    pat_str : pat_str,
+                    pat_type : pat_type,
+                    parse_func : Box::new(parse_func),
+                    description : description_str,
+                },
                 visited : false,
             });
             Ok(())
         }
         else {
-            Err(format!("[DummyCliParser Error]: argument pattern \"{}\" is already registered.", &pat.pat_str))
+            Err(format!("[DummyCliParser Error]: argument pattern \"{}\" is already registered.", &pat_str))
         }        
     }
 
@@ -101,7 +119,7 @@ impl<T> DummyCliParser<T> {
                         Err(err_msg) => return Err(err_msg),
                         _ => {
                             match &pat.internal.pat_type {
-                                PatternType::Compulsory => cnt += 1,
+                                PatternType::WithArg | PatternType::WithoutArg => cnt += 1,
                                 _ => {},
                             }
                         }, 
@@ -128,14 +146,14 @@ impl<T> DummyCliParser<T> {
     fn build_help_string(&self) -> String {
         let mut res = String::with_capacity(512);
         for pat in &self.pats {
-            let first_part = if pat.internal.need_arg {
+            let first_part = if need_arg(&pat.internal.pat_type) {
                 format!("{} arg", &pat.internal.pat_str)
             }
             else {
                 format!("{}", &pat.internal.pat_str)
             };
             match &pat.internal.pat_type {
-                PatternType::Compulsory => {
+                PatternType::WithArg | PatternType::WithoutArg => {
                     let new_str = res + &format!("{}: {}\n", &first_part, &pat.internal.description);
                     res = new_str;
                 }
